@@ -1,0 +1,174 @@
+uniform float4x4 ViewProj;
+uniform texture2d image;
+
+uniform float texture_width;
+uniform float texture_height;
+
+#define M_PI 3.1415926535897932384626433832795
+
+sampler_state def_sampler {
+	Filter	 = Linear;
+	AddressU = Clamp;
+	AddressV = Clamp;
+	BorderColor = 00000000;
+};
+
+struct VertIn {
+	float4 pos : POSITION;
+	float2 uv	: TEXCOORD0;
+};
+
+struct VertOut {
+	float4 pos : POSITION;
+	//float4 col : COLOR;
+	float2 uv	: TEXCOORD0;
+	// the 6 cube faces
+	float2 c1 : TEXCOORD0;
+	float2 c2 : TEXCOORD1;
+	float2 c3 : TEXCOORD2;
+	float2 c4 : TEXCOORD3;
+	float2 c5 : TEXCOORD4;
+	float2 c6 : TEXCOORD5;
+};
+
+VertOut VSDefault(VertIn vert_in)
+{
+	VertOut vert_out;
+	float2 uv = vert_in.uv;
+
+	// No-op shader
+	vert_out.uv = uv;
+	vert_out.pos = mul(float4(vert_in.pos.xyz, 1.0), ViewProj);
+
+	// THREE.js method
+	// https://github.com/spite/THREE.CubemapToEquirectangular/blob/master/src/CubemapToEquirectangular.js
+	//vert_out.uv = float2( 1.- uv.x, uv.y );
+
+
+	// Own method (create 6 cube faces from input)
+	//    c3
+	// c1 c5 c2 c6
+	//    c4
+	// Get "cubemap" size
+	// XXX Currently assumes that we have 2:1 aspect ratio (i.e larger than 4:3)
+	//float aspect_ratio = texture_width / texture_height;
+	//float2 cubemap_size = float2(texture_height * 4 / 3, texture_height);
+	//float2 cubeface_size = cubemap_size / float2 (4, 3);
+	//float2 texture_offset = float2(
+	//	((texture_width - cubemap_size.x) / 2) / texture_width,
+	//	((texture_height - cubemap_size.y) / 2) / texture_height
+	//);
+
+	//// Face 3
+	//float2 c3_face_offset = float2(
+	//	texture_offset.x + 1 * (cubemap_size.x / (4 * 2 * 2)) / texture_height,
+	//	0
+	//);
+	//float2 c3_add = float2(
+	//	cubeface_size.x * 1 / texture_width,
+	//	cubeface_size.y * 0 / texture_height
+	//);
+	//vert_out.c3 = float2(
+	//	(uv.x + c3_face_offset.x) / 3. + c3_add.x,
+	//	(uv.y + c3_face_offset.y) / 3. + c3_add.y
+	//);
+
+	//// Face 1
+	//float2 c1_face_offset = float2(
+	//	texture_offset.x + 1 * (cubemap_size.x / (4 * 2 * 2)) / texture_height,
+	//	0
+	//);
+	//float2 c1_add = float2(
+	//	cubeface_size.x * 0 / texture_width,
+	//	cubeface_size.y * 1 / texture_height
+	//);
+	//vert_out.c1 = float2(
+	//	(uv.x + c1_face_offset.x) / 3. + c1_add.x,
+	//	(uv.y + c1_face_offset.y) / 3. + c1_add.y
+	//);
+
+	return vert_out;
+}
+
+float4 PSTransform(VertOut vert_in) : TARGET
+{
+	// No-op method
+	float2 uv = vert_in.uv;
+	//return image.Sample(def_sampler, uv);
+
+	// THREE.js method
+	//float2 uv = vert_in.uv;
+	//float longitude = uv.x * 2. * M_PI - M_PI + M_PI / 2.;
+	//float latitude = uv.y * M_PI;
+	//vec3 dir = vec3(
+	//	- sin( longitude ) * sin( latitude ),
+	//	cos( latitude ),
+	//	- cos( longitude ) * sin( latitude )
+	//);
+	//normalize( dir );
+	//return image.Sample(def_sampler, dir);
+
+	// Shadertoy method
+	//float2 texCoord = vert_in.uv.xy / float2(texture_width, texture_height);
+	//float2 thetaphi = ((texCoord * 2.0) - float2(1.0)) * float2(M_PI, M_PI/2);
+	//float3 rayDirection = float3(cos(thetaphi.y) * cos(thetaphi.x), sin(thetaphi.y), cos(thetaphi.y) * sin(thetaphi.x));
+	//float2 fragColor = texture(iChannel0, rayDirection);
+	//vert_out.col = fragcolor;
+
+	// Own method
+	// XXX Create 6 cube faces
+	//float longitude = uv.x * 2. * M_PI;
+	//float latitude = (uv.y * 2. - 1) * 2. * M_PI;
+	//float x = cos(longitude) * cos(latitude);
+	//float y = sin(longitude) * cos(latitude);
+	//float z = sin(latitude);
+	//float3 rayDirection = normalize(float3(x, y, z));
+	//float2 uvOut = vec2((atan(rayDirection.z, rayDirection.x) / 2. * M_PI) + 0.5, acos(rayDirection.y) / M_PI);
+	//return image.Sample(def_sampler, uvOut);
+
+	// Fisheye method
+	//float2 revUV = vert_in.uv;
+
+	//float2 pfish;
+	//float theta, phi, r;
+
+	//float _FOV = 120; // FOV of the fisheye, eg: 180 degrees
+	//float FOV = M_PI/180.0*_FOV;
+
+	//float width = 1;
+	//float height = 1;
+
+	//// Polar angles
+	//theta = 2.0* M_PI * (revUV.x  - 0.5); // -pi to pi // longitude?
+	//phi =  M_PI * (revUV.y  - 0.5); // -pi/2 to pi/2 // latitude?
+
+	//float3 psph;
+	//// Vector in 3D space
+	//psph.x = cos(phi) * sin(theta);
+	//psph.y = cos(phi) * cos(theta);
+	//psph.z = sin(phi);
+
+	//// Calculate fisheye angle and radius
+	//theta = atan(psph.z, psph.x);
+	//phi = atan(sqrt(psph.x*psph.x + psph.z*psph.z), psph.y);
+	//r = height * phi / FOV;
+
+	////// Pixel in fisheye space
+	//pfish.x = 0.5 * width + r * cos(theta);
+	//pfish.y = 0.5 * width + r * sin(theta);
+
+	//float intex = step(0.0, pfish.x) * step(pfish.x, 1.0) * step(0.0, pfish.y) * step( pfish.y,1.0);
+
+	////float4 col = tex2D(_MainTex, pfish)*intex ;
+	//return image.Sample(def_sampler, pfish)*intex;
+
+}
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSDefault(vert_in);
+		pixel_shader = PSTransform(vert_in);
+	}
+}
